@@ -22,22 +22,22 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-{{ $kubectl := .Vars.kubectl }}
-{{ $logrun := .Env.GOSS_BASE | printf "%s/scripts/log_run.sh" }}
+{{ $scripts := .Env.GOSS_BASE | printf "%s/scripts" }}
+{{ $logrun := $scripts | printf "%s/log_run.sh" }}
+{{ $k8s_kyverno_pods_running := $scripts | printf "%s/k8s_kyverno_pods_running.sh" }}
 command:
-    {{ $testlabel := "k8s-kyverno-pods-running" }}
+    {{ $testlabel := "k8s_kyverno_pods_running" }}
     {{$testlabel}}:
         title: Validate kyverno pods are Running
         meta:
-            desc: Validates that kyverno pods are running. If this test fails, run "kubectl get pods -n kyverno -o wide -A | grep -Ev 'Running|Completed' to see a list of kyverno pods to investigate.
+            desc: Validates that kyverno pods are running. If this test fails, run the script "{{$k8s_kyverno_pods_running}} -p" to see a printed description of the errors. Check "kubectl get pods -n kyverno -o wide -A | grep -Ev 'Running' to see a list of kyverno pods to investigate.
             sev: 0
         exec: |-
-            set -eo pipefail
+            # Since we are logging the output, call script with -p argument
             "{{$logrun}}" -l "{{$testlabel}}" \
-                "{{$kubectl}}" get pods -n kyverno -o wide -A |
-               awk '$1 ~ "kyverno"' | awk '$4 == "Running"' | wc | awk '{if ($1 != 3) print "FAIL"; else print "PASS"}'
+                "{{$k8s_kyverno_pods_running}}" -p
         exit-status: 0
         stdout:
-            - "!FAIL"
+            - PASS
         timeout: 20000
         skip: false
