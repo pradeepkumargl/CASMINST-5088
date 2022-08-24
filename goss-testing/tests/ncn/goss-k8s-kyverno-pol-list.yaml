@@ -22,22 +22,22 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-{{ $kubectl := .Vars.kubectl }}
-{{ $logrun := .Env.GOSS_BASE | printf "%s/scripts/log_run.sh" }}
+{{ $scripts := .Env.GOSS_BASE | printf "%s/scripts" }}
+{{ $logrun := $scripts | printf "%s/log_run.sh" }}
+{{ $k8s_kyverno_pol_list := $scripts | printf "%s/k8s_kyverno_pol_list.sh" }}
 command:
-    {{ $testlabel := "k8s-kyverno-pol-list" }}
+    {{ $testlabel := "k8s_kyverno_pol_list" }}
     {{$testlabel}}:
         title: Validate kyverno policy list
         meta:
-            desc: Validates that kyverno policy list. If this test fails, run "kubectl get pol -A" to see a list of policies where kyverno should be included.
+            desc: Validates that kyverno policy list. If this test fails, run the script "{{$k8s_kyverno_pol_list}} -p" to see a printed description of the errors. Check "kubectl get pol -A" to see a list of policies where kyverno should be included.
             sev: 0
         exec: |-
-            set -eo pipefail
+            # Since we are logging the output, call script with -p argument
             "{{$logrun}}" -l "{{$testlabel}}" \
-                "{{$kubectl}}" get polr -A | 
-               wc | awk '{if ($1 > 1) print "PASS"; else print "FAIL"}'
+                "{{$k8s_kyverno_pol_list}}" -p
         exit-status: 0
         stdout:
-            - "!FAIL"
+            - PASS
         timeout: 20000
         skip: false
