@@ -21,32 +21,22 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-{{ $kubectl := .Vars.kubectl }}
-{{ $logrun := .Env.GOSS_BASE | printf "%s/scripts/log_run.sh" }}
+{{ $scripts := .Env.GOSS_BASE | printf "%s/scripts" }}
+{{ $logrun := $scripts | printf "%s/log_run.sh" }}
+{{ $k8s_kyverno_pol_list := $scripts | printf "%s/k8s_kyverno_polr_list.sh" }}
 command:
-    {{ $testlabel := "k8s-kyverno-polr-list" }}
+    {{ $testlabel := "k8s_kyverno_polr_list" }}
     {{$testlabel}}:
         title: Validate kyverno policy report list
         meta:
-            desc: Validates that kyverno policy report list. If this test fails, run "kubectl get polr -A" to see a list of policy reports.
+            desc: Validates that kyverno policy report list. If this test fails, run the script "{{$k8s_kyverno_polr_list}} -p" to see a printed description of the errors. Check "kubectl get polr -A" to see a list of policies where kyverno should be included.
             sev: 0
         exec: |-
-            set -eo pipefail
+            # Since we are logging the output, call script with -p argument
             "{{$logrun}}" -l "{{$testlabel}}" \
-                "{{$kubectl}}" get polr -A | 
-                awk '(NR>1)' | awk ' 
-                {
-                  for (i=1; i<=NF; i++)
-                  m[i][FNR] += $i
-                }
-                END {
-                    for (y=1; y<=FNR; y++) {
-                      for (x=4; x<NF; x++)
-                        if (m[x][y] > 0) {print "FAIL"; exit} } print "PASS"
-                    }'
-
+                "{{$k8s_kyverno_polr_list}}" -p
         exit-status: 0
         stdout:
-            - "!FAIL"
+            - PASS
         timeout: 20000
-        skip: false  
+        skip: false 
